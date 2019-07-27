@@ -26,5 +26,4 @@ transactions of the accounts.
 external database, so that we can test the solution easier. However, remember this is a backend
 assignment and consider layers, abstractions, testability and enterprise-level architecture carefully.
 
-
 #### How To Run
