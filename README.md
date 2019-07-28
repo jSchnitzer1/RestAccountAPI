@@ -4,6 +4,7 @@
 #### Requirements
 • The API will expose an endpoint which accepts the user information (customerID,
 initialCredit).
+
 • Once the endpoint is called, a new account will be opened connected to the user whose ID is
 customerID.
 
