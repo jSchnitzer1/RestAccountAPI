@@ -76,8 +76,9 @@ public class AccountService {
         int accountId = DBMANAGER.addAccount(customerId, initialAmount);
         if(accountId > 0) {
             json = new JSONObject();
-            json.put("customerId", customerId);
             json.put("accountId", accountId);
+            json.put("balance", initialAmount);
+            json.put("customerId", customerId);
             return Response.ok(json.toString(), MediaType.APPLICATION_JSON).build();
         }
         ErrorMessage errorMessage = new ErrorMessage("Internal database error in creating a new account for customerId" + customerId, 500, "RestAccountsAPI faults resources");
