@@ -1,10 +1,9 @@
 package com.accounts.api.controller;
 
 import com.accounts.api.database.DatabaseManager;
-import com.accounts.api.exception.DatabaseFailureException;
 import com.accounts.api.http.ResponseBuilder;
+import com.accounts.api.model.ErrorMessage;
 import com.accounts.api.model.dto.CustomerAccountsDTO;
-import com.accounts.api.model.dto.CustomerDTO;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
@@ -22,6 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
+
+import org.json.simple.*;
 
 @Path("/account")
 public class AccountService {
@@ -71,7 +72,16 @@ public class AccountService {
     @Produces(MediaType.APPLICATION_JSON)
     public Response createAccount(@PathParam("customerId") int customerId, @PathParam("initialAmount") double initialAmount) {
         LOGGER.info("createAccount is triggered");
-        return Response.ok("ok created: " + customerId, MediaType.APPLICATION_JSON).build();
+        JSONObject json = null;
+        int accountId = DBMANAGER.addAccount(customerId, initialAmount);
+        if(accountId > 0) {
+            json = new JSONObject();
+            json.put("customerId", customerId);
+            json.put("accountId", accountId);
+            return Response.ok(json.toString(), MediaType.APPLICATION_JSON).build();
+        }
+        ErrorMessage errorMessage = new ErrorMessage("Internal database error in creating a new account for customerId" + customerId, 500, "RestAccountsAPI faults resources");
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(errorMessage).build();
     }
 
     @POST

@@ -1,5 +1,6 @@
 package com.accounts.api.database;
 
+import com.accounts.api.exception.DataNotFoundException;
 import com.accounts.api.exception.DatabaseFailureException;
 import com.accounts.api.model.dto.CustomerAccountsDTO;
 import com.accounts.api.model.entity.Account;
@@ -32,6 +33,28 @@ public class DatabaseManager {
             databaseManager = new DatabaseManager();
         }
         return databaseManager;
+    }
+
+    /**
+     * This method is creates a SessionFactory only and only if the connection to database is disrupted
+     * or SessionFactory is closed or null
+     */
+    public void initDatabase() {
+        if (sessionFactory == null || sessionFactory.isClosed()) {
+            LOGGER.info("initDatabase is triggered.");
+            sessionFactory = new Configuration().configure().buildSessionFactory();
+            session = sessionFactory.openSession();
+            LOGGER.info("initDatabase has initialized the database.");
+        }
+    }
+
+    public void destroyDatabase() {
+        if (sessionFactory == null || sessionFactory.isClosed()) {
+            LOGGER.info("destroyDatabase is triggered.");
+            session.close();
+            sessionFactory.close();
+            LOGGER.info("destroyDatabase has destroyed in-memory database.");
+        }
     }
 
     public List<CustomerAccountsDTO> initExistingCustomers() {
@@ -78,6 +101,21 @@ public class DatabaseManager {
         }
     }
 
+    public int addAccount(int customerId, double initialAmount) {
+        List<Customer> customers = session.createQuery("from Customer c where c.customerId = :customerId").setParameter("customerId", customerId).list();
+        if(customers == null || customers.size() == 0) {
+            throw new DataNotFoundException("Customer Id: " + customerId + " is not found!");
+        }
+        try {
+            Account account = new Account(initialAmount, customers.get(0));
+            session.save(account);
+            return account.getAccountId();
+        } catch (Exception e) {
+            LOGGER.error("addAccount - error in saving account", e);
+            return -1;
+        }
+    }
+
     private List<Customer> fetchCustomersAndAccounts(boolean fetchAccounts) {
         List<Customer> resultCustomers = session.createQuery("from Customer").list();
         if(fetchAccounts) { // lazy fetching accounts
@@ -86,27 +124,5 @@ public class DatabaseManager {
             });
         }
         return resultCustomers;
-    }
-
-    /**
-     * This method is creates a SessionFactory only and only if the connection to database is disrupted
-     * or SessionFactory is closed or null
-     */
-    public void initDatabase() {
-        if (sessionFactory == null || sessionFactory.isClosed()) {
-            LOGGER.info("initDatabase is triggered.");
-            sessionFactory = new Configuration().configure().buildSessionFactory();
-            session = sessionFactory.openSession();
-            LOGGER.info("initDatabase has initialized the database.");
-        }
-    }
-
-    public void destroyDatabase() {
-        if (sessionFactory == null || sessionFactory.isClosed()) {
-            LOGGER.info("destroyDatabase is triggered.");
-            session.close();
-            sessionFactory.close();
-            LOGGER.info("destroyDatabase has destroyed in-memory database.");
-        }
     }
 }
