@@ -1,7 +1,7 @@
 package com.accounts.api.controller;
 
 import com.accounts.api.database.DatabaseManager;
-import com.accounts.api.http.ResponseBuilder;
+import com.accounts.api.database.TransactionStatus;
 import com.accounts.api.model.ErrorMessage;
 import com.accounts.api.model.dto.CustomerAccountsDTO;
 import org.apache.log4j.Logger;
@@ -30,7 +30,8 @@ public class AccountService {
     private static final Properties PROPERTIES = new Properties();
     private static final DatabaseManager DBMANAGER = DatabaseManager.getInstance();
     private static String baseURL;
-    @Context private ServletContext context;
+    @Context
+    private ServletContext context;
 
     public static String getBaseURL() {
         return baseURL;
@@ -68,34 +69,55 @@ public class AccountService {
     }
 
     @POST
-    @Path("/createAccount/{customerId}/{initialAmount}") // another solution is by using either @@QueryParam or @Consumes(MediaType.APPLICATION_JSON) but then we need to provide a JAX-b enabled class for that
+    @Path("/createAccount/{customerId}/{initialAmount}")
+    // another solution is by using either @@QueryParam or @Consumes(MediaType.APPLICATION_JSON) but then we need to provide a JAX-b enabled class for that
     @Produces(MediaType.APPLICATION_JSON)
     public Response createAccount(@PathParam("customerId") int customerId, @PathParam("initialAmount") double initialAmount) {
         LOGGER.info("createAccount is triggered");
         JSONObject json = null;
         int accountId = DBMANAGER.addAccount(customerId, initialAmount);
-        if(accountId > 0) {
+        if (accountId > 0) {
             json = new JSONObject();
             json.put("accountId", accountId);
             json.put("balance", initialAmount);
             json.put("customerId", customerId);
             return Response.ok(json.toString(), MediaType.APPLICATION_JSON).build();
         }
-        ErrorMessage errorMessage = new ErrorMessage("Internal database error in creating a new account for customerId" + customerId, 500, "RestAccountsAPI faults resources");
+
+        return getErrorResponse("Internal database error in creating a new account for customerId" + customerId, 500);
+    }
+
+    private Response getErrorResponse(String errorMessageStr, int errorCode) {
+        ErrorMessage errorMessage = new ErrorMessage(errorMessageStr, errorCode, "RestAccountsAPI faults resources");
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(errorMessage).build();
     }
 
     @POST
-    @Path("/checkAccountEndpoint")
+    @Path("/createTransaction/{customerId}/{transactionAmount}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response checkAccountEndpoint() {
-        LOGGER.info("checkAccountEndpoint is triggered");
-        int status = ResponseBuilder.buildReponse("POST", "application/json", "/api/transaction/checkTransactionEndpoint");
-        if (status > 299) {
-            return Response.serverError().build();
-        } else {
-            return Response.ok("<response>AccountEndpoint: 200 OK</response>").build();
+    public Response createTransaction(@PathParam("customerId") int customerId, @PathParam("transactionAmount") double transactionAmount) {
+        LOGGER.info("createTransaction is triggered");
+        JSONObject json = null;
+        TransactionStatus txStatus = DBMANAGER.addTransactionToAccount(customerId, transactionAmount);
+        switch (txStatus) {
+            case ACCOUNT_NOT_AVAILABLE:
+                return getErrorResponse("Account is not available", 501);
+            case BALANCE_IS_NOT_ENOUGH:
+                return getErrorResponse("Balance must be larger than transaction amount", 502);
+            case DATABASE_ENDPOINT_ERROR:
+                return getErrorResponse("Database endpoint error", 503);
+            case DATABASE_ENDPOINT_RESPONSE_ERROR:
+                return getErrorResponse("Database endpoint server error", 504);
+            case DATABASE_ENDPOINT_SERVER_ERROR:
+                return getErrorResponse("Database endpoint server error", 505);
+            case EXCEPTION:
+                return getErrorResponse("Unknown Error", 506);
+            case SUCCESS:
+                json = new JSONObject();
+                json.put("result", "success");
+                return Response.ok(json.toString(), MediaType.APPLICATION_JSON).build();
         }
+        return getErrorResponse("Internal database error in creating a new transaction for customerId" + customerId, 500);
     }
 
 

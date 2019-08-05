@@ -15,6 +15,9 @@ public class Account implements Serializable {
     @Column
     private double balance;
 
+    @Column (name = "default")
+    private boolean defaultAccount;
+
     @ManyToOne(fetch = FetchType.EAGER,
             cascade = CascadeType.ALL)
     @JoinColumn(name = "Customer", referencedColumnName="customerId")
@@ -23,8 +26,9 @@ public class Account implements Serializable {
     public Account() {
     }
 
-    public Account(double balance, Customer customer) {
+    public Account(double balance, boolean defaultAccount, Customer customer) {
         this.balance = balance;
+        this.defaultAccount = defaultAccount;
         this.customer = customer;
     }
 
@@ -50,5 +54,13 @@ public class Account implements Serializable {
 
     public void setCustomer(Customer customer) {
         this.customer = customer;
+    }
+
+    public boolean isDefaultAccount() {
+        return defaultAccount;
+    }
+
+    public void setDefaultAccount(boolean defaultAccount) {
+        this.defaultAccount = defaultAccount;
     }
 }

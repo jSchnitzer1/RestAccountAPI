@@ -1,7 +1,10 @@
 package com.accounts.api.database;
 
+import com.accounts.api.convert.JsonObjectDeserializer;
 import com.accounts.api.exception.DataNotFoundException;
 import com.accounts.api.exception.DatabaseFailureException;
+import com.accounts.api.http.Response;
+import com.accounts.api.http.ResponseBuilder;
 import com.accounts.api.model.dto.CustomerAccountsDTO;
 import com.accounts.api.model.entity.Account;
 import com.accounts.api.model.entity.Customer;
@@ -14,6 +17,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -73,13 +77,13 @@ public class DatabaseManager {
             inCustomers.forEach(c -> {
                 if (customers == null || customers.isEmpty()) {
                     session.save(c);
-                    Account account = new Account(7000, c);
+                    Account account = new Account(7000, true, c);
                     session.save(account);
                 } else {
                     Optional<Customer> opInCustomer = Customer.containsInCustomers(customers, c.getFirstname(), c.getLastname());
                     if (!opInCustomer.isPresent()) {
                         session.save(c);
-                        Account account = new Account(7000, c);
+                        Account account = new Account(7000, true, c);
                         session.save(account);
                     }
                 }
@@ -106,14 +110,65 @@ public class DatabaseManager {
         if(customers == null || customers.size() == 0) {
             throw new DataNotFoundException("Customer Id: " + customerId + " is not found!");
         }
+        org.hibernate.Transaction tx = null;
         try {
-            Account account = new Account(initialAmount, customers.get(0));
+            Account account = null;
+            tx = session.beginTransaction();
+            if(initialAmount > 0) {
+                updateDefaultAccount(customers.get(0).getCustomerId(), false);
+                account = new Account(initialAmount, true, customers.get(0));
+            } else {
+                account = new Account(initialAmount, false, customers.get(0));
+            }
+
             session.save(account);
+            tx.commit();
             return account.getAccountId();
         } catch (Exception e) {
+            if(tx != null) tx.rollback();
             LOGGER.error("addAccount - error in saving account", e);
             return -1;
         }
+    }
+
+    public TransactionStatus addTransactionToAccount(int customerId, double transactionAmount) {
+        LOGGER.info("addTransactionToAccount - new transaction is added successfully for customer: " + customerId);
+        StringBuilder methodURL = new StringBuilder();
+        UUID uuid = UUID.randomUUID();
+        String transactionUUID = uuid.toString();
+
+        List<Account> accounts = session.createQuery("from Account where customer.customerId=:customerId and defaultAccount=:defaultAccount")
+                .setParameter("customerId", customerId)
+                .setParameter("defaultAccount", true)
+                .list();
+        if(accounts == null || accounts.isEmpty()) return TransactionStatus.ACCOUNT_NOT_AVAILABLE;
+        if(accounts.get(0).getBalance() < transactionAmount) return TransactionStatus.BALANCE_IS_NOT_ENOUGH;
+
+        try {
+            methodURL.append("/api/transaction/createTransaction/").append(accounts.get(0).getAccountId()).append("/").append(transactionAmount).append("/").append(transactionUUID);
+            Response response = ResponseBuilder.buildReponse("POST", "application/json", methodURL.toString());
+            if(response == null) return TransactionStatus.DATABASE_ENDPOINT_RESPONSE_ERROR;
+            if(response.getResponseCode() > 299) return TransactionStatus.DATABASE_ENDPOINT_SERVER_ERROR;
+            if(JsonObjectDeserializer.jsonToTransaction(response.getReader())) {
+                accounts.get(0).setBalance(accounts.get(0).getBalance() - transactionAmount);
+                session.update(accounts.get(0));
+                return TransactionStatus.SUCCESS;
+            }
+            return TransactionStatus.DATABASE_ENDPOINT_ERROR;
+        } catch (Exception ex) {
+            methodURL.append("/api/transaction/deleteTransaction/").append(accounts.get(0).getAccountId()).append("/").append(transactionUUID);
+            ResponseBuilder.buildReponse("DELETE", "application/json", methodURL.toString());
+            return TransactionStatus.EXCEPTION;
+        }
+    }
+
+    private void updateDefaultAccount(int customerId, boolean isDefault) {
+        //int rows = session.createQuery("update Account set defaultAccount = false where customer.customerId = :customerId").setParameter("customerId", customerId).executeUpdate();
+        List<Account> accounts = session.createQuery("from Account where customer.customerId=:customerId").setParameter("customerId", customerId).list();
+        accounts.forEach(a -> {
+            a.setDefaultAccount(isDefault);
+            session.update(a);
+        });
     }
 
     private List<Customer> fetchCustomersAndAccounts(boolean fetchAccounts) {

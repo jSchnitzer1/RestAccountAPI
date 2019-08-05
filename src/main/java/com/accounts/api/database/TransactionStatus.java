@@ -1,0 +1,11 @@
+package com.accounts.api.database;
+
+public enum TransactionStatus {
+    ACCOUNT_NOT_AVAILABLE,
+    BALANCE_IS_NOT_ENOUGH,
+    DATABASE_ENDPOINT_ERROR,
+    DATABASE_ENDPOINT_RESPONSE_ERROR,
+    DATABASE_ENDPOINT_SERVER_ERROR,
+    EXCEPTION,
+    SUCCESS
+}
