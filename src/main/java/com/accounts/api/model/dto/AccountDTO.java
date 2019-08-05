@@ -13,13 +13,15 @@ import java.util.List;
 public class AccountDTO {
     private long accountId;
     private double balance;
+    private boolean defaultAccount;
 
     public AccountDTO() {
     }
 
-    public AccountDTO(long accountId, double balance) {
+    public AccountDTO(long accountId, double balance, boolean defaultAccount) {
         this.accountId = accountId;
         this.balance = balance;
+        this.defaultAccount = defaultAccount;
     }
 
     public long getAccountId() {
@@ -38,8 +40,16 @@ public class AccountDTO {
         this.balance = balance;
     }
 
+    public boolean isDefaultAccount() {
+        return defaultAccount;
+    }
+
+    public void setDefaultAccount(boolean defaultAccount) {
+        this.defaultAccount = defaultAccount;
+    }
+
     public static AccountDTO cloneFromEntity(Account account) {
-        return new AccountDTO(account.getAccountId(), account.getBalance());
+        return new AccountDTO(account.getAccountId(), account.getBalance(), account.isDefaultAccount());
     }
 
     public static List<AccountDTO> cloneFromEntity(List<Account> accounts) {

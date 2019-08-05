@@ -1,16 +1,10 @@
 package com.accounts.api.http;
 
+import java.io.Reader;
+
 public class Response {
     private int responseCode;
-    private String responseMessage;
-
-    public Response() {
-    }
-
-    public Response(int responseCode, String responseMessage) {
-        this.responseCode = responseCode;
-        this.responseMessage = responseMessage;
-    }
+    private Reader reader;
 
     public int getResponseCode() {
         return responseCode;
@@ -20,11 +14,19 @@ public class Response {
         this.responseCode = responseCode;
     }
 
-    public String getResponseMessage() {
-        return responseMessage;
+    public Reader getReader() {
+        return reader;
     }
 
-    public void setResponseMessage(String responseMessage) {
-        this.responseMessage = responseMessage;
+    public void setReader(Reader reader) {
+        this.reader = reader;
+    }
+
+    public Response() {
+    }
+
+    public Response(int responseCode, Reader reader) {
+        this.responseCode = responseCode;
+        this.reader = reader;
     }
 }
