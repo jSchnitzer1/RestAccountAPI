@@ -1,5 +1,6 @@
 package com.accounts.api.convert;
 
+import com.accounts.api.model.dto.TransactionDTO;
 import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -25,4 +26,21 @@ public class JsonObjectDeserializer {
             return false;
         }
     }
+
+    public static List<TransactionDTO> jsonToTransactionsDTO(Reader reader) throws IOException, ParseException {
+        List<TransactionDTO> transactionDTOs = new ArrayList<>();
+        JSONParser parser=new JSONParser();
+        Object object = parser.parse(reader);
+
+        JSONArray array = (JSONArray) object;
+        array.forEach(tDTO -> {
+            JSONObject jtDTO = (JSONObject) tDTO;
+            TransactionDTO transactionDTO = new TransactionDTO((long) jtDTO.get("transactionId"), (double) jtDTO.get("transactionAmount"), (String) jtDTO.get("transactionUUID"), (long) jtDTO.get("accountId"));
+            transactionDTOs.add(transactionDTO);
+        });
+
+        return transactionDTOs;
+    }
+
+
 }

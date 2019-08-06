@@ -1,6 +1,7 @@
 package com.accounts.api.controller;
 
 import com.accounts.api.database.DatabaseManager;
+import com.accounts.api.database.DatabaseManagerImpl;
 import com.accounts.api.database.TransactionStatus;
 import com.accounts.api.model.ErrorMessage;
 import com.accounts.api.model.dto.CustomerAccountsDTO;
@@ -9,10 +10,7 @@ import org.apache.log4j.PropertyConfigurator;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Context;
@@ -28,7 +26,7 @@ import org.json.simple.*;
 public class AccountService {
     private static final Logger LOGGER = Logger.getLogger(AccountService.class.getName());
     private static final Properties PROPERTIES = new Properties();
-    private static final DatabaseManager DBMANAGER = DatabaseManager.getInstance();
+    private static final DatabaseManager DBMANAGER = DatabaseManagerImpl.getInstance();
     private static String baseURL;
     @Context
     private ServletContext context;
@@ -120,5 +118,12 @@ public class AccountService {
         return getErrorResponse("Internal database error in creating a new transaction for customerId" + customerId, 500);
     }
 
+    @GET
+    @Path("/fetchCustomers")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<CustomerAccountsDTO> fetchCustomers() {
+        LOGGER.info("fetchCustomers is triggered");
+        return DBMANAGER.fetchCustomers();
+    }
 
 }

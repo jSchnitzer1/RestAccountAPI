@@ -3,11 +3,12 @@ package com.accounts.api.model.dto;
 import com.accounts.api.model.entity.Customer;
 
 import javax.xml.bind.annotation.XmlRootElement;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 @XmlRootElement
-public class CustomerAccountsDTO {
+public class CustomerAccountsDTO implements Serializable {
     private CustomerDTO customerDTO;
     private List<AccountDTO> accountDTOs;
 

@@ -1,7 +1,10 @@
 package com.accounts.api.model.entity;
 
+import com.accounts.api.model.dto.TransactionDTO;
+
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -23,13 +26,18 @@ public class Account implements Serializable {
     @JoinColumn(name = "Customer", referencedColumnName="customerId")
     private Customer customer;
 
+    //non entity fields
+    @Transient
+    private List<TransactionDTO> transactionDTOs;
+
     public Account() {
     }
 
-    public Account(double balance, boolean defaultAccount, Customer customer) {
+    public Account(double balance, boolean defaultAccount, Customer customer, List<TransactionDTO> transactionDTOs) {
         this.balance = balance;
         this.defaultAccount = defaultAccount;
         this.customer = customer;
+        this.transactionDTOs = transactionDTOs;
     }
 
     public int getAccountId() {
@@ -62,5 +70,16 @@ public class Account implements Serializable {
 
     public void setDefaultAccount(boolean defaultAccount) {
         this.defaultAccount = defaultAccount;
+    }
+
+    public List<TransactionDTO> getTransactionDTOs() {
+        return transactionDTOs;
+    }
+
+    public void setTransactionDTOs(List<TransactionDTO> transactionDTOs) {
+        if(transactionDTOs == null)
+            this.transactionDTOs= new ArrayList<>();
+        else
+            this.transactionDTOs = transactionDTOs;
     }
 }

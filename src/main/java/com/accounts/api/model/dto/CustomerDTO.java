@@ -2,6 +2,7 @@ package com.accounts.api.model.dto;
 
 import com.accounts.api.model.entity.Customer;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,7 +10,7 @@ import java.util.List;
  * This DTO is used to prevent exposing the Customer entity to the world.
  */
 @XmlRootElement
-public class CustomerDTO {
+public class CustomerDTO implements Serializable {
     private long customerId;
     private String firstname;
     private String lastname;
@@ -49,12 +50,5 @@ public class CustomerDTO {
 
     public static CustomerDTO cloneFromEntity(Customer customer) {
         return new CustomerDTO(customer.getCustomerId(), customer.getFirstname(), customer.getLastname());
-    }
-
-    public static List<CustomerDTO> cloneFromEntity(List<Customer> customers) {
-        if(customers == null || customers.size() == 0) return null;
-        List<CustomerDTO> customerDTOs = new ArrayList<>();
-        customers.forEach(c -> customerDTOs.add(cloneFromEntity(c)));
-        return customerDTOs;
     }
 }
