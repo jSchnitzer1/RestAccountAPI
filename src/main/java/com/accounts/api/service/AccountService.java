@@ -154,16 +154,6 @@ public class AccountService {
         return DBMANAGER.fetchCustomers(start, size);
     }
 
-
-
-
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    @Path("/getIt")
-    public Response getIt() {
-        return Response.ok().entity("status 200").build();
-    }
-
     private static class AccountServiceHelper {
         private static Response getErrorResponse(String errorMessageStr, int errorCode) {
             ErrorMessage errorMessage = new ErrorMessage(errorMessageStr, errorCode, "RestAccountsAPI faults resources");

@@ -35,13 +35,6 @@ public class AccountTestServiceTest extends JerseyTest {
     }
 
     @Test
-    public void getIt() {
-        Response response = target("/account/getIt").request().get();
-        assertEquals("status 200", 200, response.getStatus());
-        assertNotNull("Should return status 200", response.getEntity().toString());
-    }
-
-    @Test
     public void initCustomers() {
         Response response = target("/account/initCustomers").request().post(Entity.json(null));
 
@@ -131,8 +124,9 @@ public class AccountTestServiceTest extends JerseyTest {
 
     private void testResponseStatus(Response response, String methodName) {
         int status = response.getStatus();
-        assertEquals(methodName + " response status is: 200", status, response.getStatus());
+        assertEquals(methodName + " - response status is: 200", status, 200);
     }
+
     private InputStream testResponse(Response response, String methodName) {
         InputStream data = (InputStream) response.getEntity();
         assertNotNull(methodName + " response data should not be null", data);
