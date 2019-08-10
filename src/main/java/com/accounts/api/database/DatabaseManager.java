@@ -8,7 +8,7 @@ public interface DatabaseManager {
     void initDatabase();
     void destroyDatabase();
     List<CustomerAccountsDTO> initExistingCustomers();
-    List<CustomerAccountsDTO> fetchCustomers();
+    List<CustomerAccountsDTO> fetchCustomers(int start, int size);
     int addAccount(int customerId, double initialAmount);
     TransactionStatus addTransactionToAccount(int customerId, double transactionAmount);
 

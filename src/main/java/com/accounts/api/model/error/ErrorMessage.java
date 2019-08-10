@@ -1,4 +1,4 @@
-package com.accounts.api.model;
+package com.accounts.api.model.error;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
