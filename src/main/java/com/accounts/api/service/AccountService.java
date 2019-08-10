@@ -3,10 +3,9 @@ package com.accounts.api.service;
 import com.accounts.api.database.DatabaseManager;
 import com.accounts.api.database.DatabaseManagerImpl;
 import com.accounts.api.database.TransactionStatus;
-import com.accounts.api.model.error.ErrorMessage;
 import com.accounts.api.model.dto.CustomerAccountsDTO;
+import com.accounts.api.model.error.ErrorMessage;
 import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -20,6 +19,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
 
+import org.apache.log4j.PropertyConfigurator;
 import org.json.simple.*;
 
 @Path("/account")
@@ -42,17 +42,8 @@ public class AccountService {
     @PostConstruct
     public void postConst() {
         DBMANAGER.initDatabase();
-        String log4jConfigPath = context.getRealPath("WEB-INF/log4j.properties");
-        PropertyConfigurator.configure(log4jConfigPath);
-        InputStream inputStream = context.getResourceAsStream("/WEB-INF/service.properties");
-        if (inputStream != null) {
-            try {
-                PROPERTIES.load(inputStream);
-            } catch (IOException e) {
-                LOGGER.error("postConst - unable to load service properties file. Error: ", e);
-            }
-        }
-        baseURL = !PROPERTIES.isEmpty() ? PROPERTIES.getProperty("transactionApiBaseUrl") : "http://localhost:8080/RestTransactionsAPI";
+        AccountServiceHelper.ConfigureLogger(context);
+        AccountServiceHelper.prepareBaseUrl(context);
     }
 
     /**
@@ -98,7 +89,7 @@ public class AccountService {
             json.put("customerId", customerId);
             return Response.ok(json.toString(), MediaType.APPLICATION_JSON).build();
         }
-        return getErrorResponse("Internal database error in creating a new account for customerId" + customerId, 500);
+        return AccountServiceHelper.getErrorResponse("Internal database error in creating a new account for customerId" + customerId, 500);
     }
 
     /**
@@ -116,23 +107,23 @@ public class AccountService {
         TransactionStatus txStatus = DBMANAGER.addTransactionToAccount(customerId, transactionAmount);
         switch (txStatus) {
             case ACCOUNT_NOT_AVAILABLE:
-                return getErrorResponse("Account is not available", 501);
+                return AccountServiceHelper.getErrorResponse("Account is not available", 501);
             case BALANCE_IS_NOT_ENOUGH:
-                return getErrorResponse("Balance must be larger than transaction amount", 502);
+                return AccountServiceHelper.getErrorResponse("Balance must be larger than transaction amount", 502);
             case DATABASE_ENDPOINT_ERROR:
-                return getErrorResponse("Database endpoint error", 503);
+                return AccountServiceHelper.getErrorResponse("Database endpoint error", 503);
             case DATABASE_ENDPOINT_RESPONSE_ERROR:
-                return getErrorResponse("Database endpoint server error", 504);
+                return AccountServiceHelper.getErrorResponse("Database endpoint server error", 504);
             case DATABASE_ENDPOINT_SERVER_ERROR:
-                return getErrorResponse("Database endpoint server error", 505);
+                return AccountServiceHelper.getErrorResponse("Database endpoint server error", 505);
             case EXCEPTION:
-                return getErrorResponse("Unknown Error", 506);
+                return AccountServiceHelper.getErrorResponse("Unknown Error", 506);
             case SUCCESS:
                 json = new JSONObject();
                 json.put("result", "success");
                 return Response.ok(json.toString(), MediaType.APPLICATION_JSON).build();
         }
-        return getErrorResponse("Internal database error in creating a new transaction for customerId" + customerId, 500);
+        return AccountServiceHelper.getErrorResponse("Internal database error in creating a new transaction for customerId" + customerId, 500);
     }
 
     /**
@@ -145,8 +136,7 @@ public class AccountService {
     @Produces(MediaType.APPLICATION_JSON)
     public List<CustomerAccountsDTO> fetchCustomers() {
         LOGGER.info("fetchCustomers is triggered");
-        // when passing -1, then retrieve all customers
-        return DBMANAGER.fetchCustomers(-1, -1);
+        return DBMANAGER.fetchCustomers(-1, -1); // when passing -1, then retrieve all customers
     }
 
     /**
@@ -164,9 +154,46 @@ public class AccountService {
         return DBMANAGER.fetchCustomers(start, size);
     }
 
-    private Response getErrorResponse(String errorMessageStr, int errorCode) {
-        ErrorMessage errorMessage = new ErrorMessage(errorMessageStr, errorCode, "RestAccountsAPI faults resources");
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(errorMessage).build();
+
+
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/getIt")
+    public Response getIt() {
+        return Response.ok().entity("status 200").build();
     }
 
+    private static class AccountServiceHelper {
+        private static Response getErrorResponse(String errorMessageStr, int errorCode) {
+            ErrorMessage errorMessage = new ErrorMessage(errorMessageStr, errorCode, "RestAccountsAPI faults resources");
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(errorMessage).build();
+        }
+
+        private static void ConfigureLogger(ServletContext context) {
+            if(context != null) {
+                String log4jConfigPath = context.getRealPath("WEB-INF/log4j.properties");
+                PropertyConfigurator.configure(log4jConfigPath);
+            }
+        }
+
+        private static void prepareBaseUrl(ServletContext context) {
+            if(context == null) {
+                // set baseURL manually when dependency injector fails
+                baseURL = "http://localhost:8080/RestTransactionsAPI";
+                return;
+            }
+
+            InputStream inputStream = context.getResourceAsStream("/WEB-INF/service.properties");
+            if (inputStream != null) {
+                try {
+                    PROPERTIES.load(inputStream);
+                } catch (IOException e) {
+                    LOGGER.error("postConst - unable to load service properties file. Error: ", e);
+                }
+            }
+            baseURL = !PROPERTIES.isEmpty() ? PROPERTIES.getProperty("transactionApiBaseUrl") : "http://localhost:8080/RestTransactionsAPI";
+        }
+
+    }
 }

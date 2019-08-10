@@ -30,6 +30,7 @@ public class DatabaseManagerImpl implements DatabaseManager {
     private static SessionFactory sessionFactory;
     private static Session session;
     private static DatabaseManager databaseManager;
+    private boolean customersInitiated = false;
 
     private DatabaseManagerImpl() {
     }
@@ -80,6 +81,16 @@ public class DatabaseManagerImpl implements DatabaseManager {
     public List<CustomerAccountsDTO> initExistingCustomers() {
         LOGGER.info("initExistingCustomers is triggered");
         List<CustomerAccountsDTO> caDTOs = null;
+
+        if(customersInitiated) {
+            List<Customer> resultCustomers = fetchCustomersAndAccounts(true, -1, -1);
+            caDTOs = CustomerAccountsDTO.createCustomerAccountsDTO(resultCustomers);
+            if (caDTOs == null) {
+                throw new DatabaseFailureException("Unable to retrieve inCustomers into the database.");
+            }
+            return caDTOs;
+        }
+
         List<Customer> inCustomers = Stream
                 .of(new Customer("Khaled", "Jendi"), new Customer("Tina", "John"), new Customer("Mat", "Olof"))
                 .collect(Collectors.toCollection(ArrayList::new));
@@ -113,6 +124,7 @@ public class DatabaseManagerImpl implements DatabaseManager {
                 throw new DatabaseFailureException("Unable to retrieve inCustomers into the database.");
             }
             LOGGER.info("createTestDatabase - new inCustomers and accounts are added successfully.");
+            customersInitiated = true;
             return caDTOs;
         } catch (Exception e) {
             if (tx != null) tx.rollback();
@@ -154,6 +166,7 @@ public class DatabaseManagerImpl implements DatabaseManager {
      * @return
      */
     public int addAccount(int customerId, double initialAmount) {
+        if(!customersInitiated) initExistingCustomers();
         List<Customer> customers = session.createQuery("from Customer c where c.customerId = :customerId").setParameter("customerId", customerId).list();
         if (customers == null || customers.size() == 0) {
             throw new DataNotFoundException("Customer Id: " + customerId + " is not found!");
@@ -187,6 +200,7 @@ public class DatabaseManagerImpl implements DatabaseManager {
      */
     public TransactionStatus addTransactionToAccount(int customerId, double transactionAmount) {
         LOGGER.info("addTransactionToAccount - new transaction is added successfully for customer: " + customerId);
+        if(!customersInitiated) initExistingCustomers();
         StringBuilder methodURL = new StringBuilder();
         UUID uuid = UUID.randomUUID();
         String transactionUUID = uuid.toString();
