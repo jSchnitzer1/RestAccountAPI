@@ -1,4 +1,4 @@
-package com.accounts.api.convert;
+package com.accounts.api.serialization;
 
 import com.accounts.api.model.dto.TransactionDTO;
 import org.apache.log4j.Logger;

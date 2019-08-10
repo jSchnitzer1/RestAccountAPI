@@ -1,6 +1,6 @@
 package com.accounts.api.exception;
 
-import com.accounts.api.model.ErrorMessage;
+import com.accounts.api.model.error.ErrorMessage;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;

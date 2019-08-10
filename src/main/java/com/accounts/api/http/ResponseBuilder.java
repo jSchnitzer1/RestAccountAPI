@@ -1,6 +1,6 @@
 package com.accounts.api.http;
 
-import com.accounts.api.controller.AccountService;
+import com.accounts.api.service.AccountService;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
